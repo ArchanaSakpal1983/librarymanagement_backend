@@ -13,17 +13,18 @@ public class Book {
     private String author;
     private String isbn;
     private boolean available;
-
-    // Getter for ID
-    public Long getId() {
-        return id;
-    }
-
+    
     // Setter for ID — required for updating
     public void setId(Long id) {
         this.id = id;
     }
 
+    // Getter for ID
+    public Long getId() {
+        return id;
+    }
+    
+    
     // Add other getters and setters here
     public String getTitle() {
         return title;
