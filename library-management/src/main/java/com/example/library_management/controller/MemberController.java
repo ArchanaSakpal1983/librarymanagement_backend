@@ -2,9 +2,11 @@
 package com.example.library_management.controller;
 
 import com.example.library_management.model.Member;
+
 import com.example.library_management.service.MemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +31,9 @@ public class MemberController {
     }
 
     @PostMapping
-    public Member createMember(@RequestBody Member member) {
+    public Member createMember(@Valid @RequestBody Member member) {
         return memberService.createMember(member);
+        
     }
 
     @DeleteMapping("/{id}")
