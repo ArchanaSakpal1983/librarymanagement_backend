@@ -29,6 +29,10 @@ public class MemberService {
     public Member createMember(Member member) {
         return memberRepository.save(member);
     }
+    // update existing member
+    public Member updateMember(Member member) {
+        return memberRepository.save(member); // save() will update if ID exists
+    }    
     // delete member by ID
     public void deleteMember(Long id) {
         memberRepository.deleteById(id);

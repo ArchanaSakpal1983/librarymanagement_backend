@@ -36,6 +36,13 @@ public class MemberController {
         
     }
 
+    @PutMapping("/{id}")
+    public Member updateMember(@PathVariable Long id, @Valid @RequestBody Member member) {
+        member.setId(id); // Ensure ID from path is applied to the object
+        return memberService.updateMember(member);
+    }
+    
+    
     @DeleteMapping("/{id}")
     public void deleteMember(@PathVariable Long id) {
         memberService.deleteMember(id);
