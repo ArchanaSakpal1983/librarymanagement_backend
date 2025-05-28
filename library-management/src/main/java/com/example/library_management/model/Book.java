@@ -13,6 +13,8 @@ public class Book {
     private String author;
     private String isbn;
     private boolean available;
+    @Column(name = "published_year")  // explicit mapping to ensure mapped to SQL publish_year
+    private Integer publishedYear; // new field added on 28May2025
     
     // Setter for ID — required for updating
     public void setId(Long id) {
@@ -57,4 +59,15 @@ public class Book {
     public void setAvailable(boolean available) {
         this.available = available;
     }
+    
+    // Getter and setting for the Addition of publish year field on 28May 2025
+    public Integer getPublishedYear() {
+        return publishedYear;
+    }
+    // Getter and setting for the Addition of publish year field on 28May 2025
+    public void setPublishedYear(Integer publishedYear) {
+        this.publishedYear = publishedYear;
+    }
+    
+    
 }
