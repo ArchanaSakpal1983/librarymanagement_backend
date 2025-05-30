@@ -21,7 +21,7 @@ public class Loan {
     private LocalDate returnDate;
 
     private int renewCount = 0;
-    private double fineAmount = 0;
+    private Double fineAmount = 0.0;
 
     // Getter and Setter for ID
     public Long getId() {
