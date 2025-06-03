@@ -3,38 +3,77 @@ package com.example.library_management.service;
 import com.example.library_management.model.Member;
 import com.example.library_management.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 
-// Service layer for handling business logic related to Member
-
-@Service		// Marks this class as a service bean
+@Service
 public class MemberService {
 
-    @Autowired  // injects the MemberRepository dependency
-    //Assign class MemberRepository to field name memberRepository
+    @Autowired
     private MemberRepository memberRepository;
-    
-    // fetch all member from DB
+
+    // ───────────────────────────────────────────────────────
+    // ADMIN USE – Unrestricted access (all members)
+    // ───────────────────────────────────────────────────────
+
     public List<Member> getAllMembers() {
         return memberRepository.findAll();
     }
-    // fetch member by member ID
+
     public Optional<Member> getMemberById(Long id) {
         return memberRepository.findById(id);
     }
-    // create new member
+
     public Member createMember(Member member) {
         return memberRepository.save(member);
     }
-    // update existing member
+
     public Member updateMember(Member member) {
-        return memberRepository.save(member); // save() will update if ID exists
-    }    
-    // delete member by ID
+        return memberRepository.save(member);
+    }
+
     public void deleteMember(Long id) {
         memberRepository.deleteById(id);
+    }
+
+    // ───────────────────────────────────────────────────────
+    // MEMBER USE – Self-service using JWT-authenticated user
+    // ───────────────────────────────────────────────────────
+
+    /**
+     * Gets the current authenticated member based on JWT token
+     */
+    public Member getCurrentAuthenticatedMember() {
+        String username = getCurrentUsername();
+        return memberRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Authenticated member not found"));
+    }
+
+    /**
+     * Updates the authenticated member's profile (excluding role or username)
+     */
+    public Member updateOwnProfile(Member updatedInfo) {
+        Member currentMember = getCurrentAuthenticatedMember();
+        currentMember.setName(updatedInfo.getName());
+        currentMember.setEmail(updatedInfo.getEmail());
+        currentMember.setActive(updatedInfo.isActive());
+        // Optionally: handle password changes separately
+        return memberRepository.save(currentMember);
+    }
+
+    /**
+     * Helper method to get current username from JWT context
+     */
+    private String getCurrentUsername() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails userDetails) {
+            return userDetails.getUsername();
+        } else {
+            return principal.toString();
+        }
     }
 }

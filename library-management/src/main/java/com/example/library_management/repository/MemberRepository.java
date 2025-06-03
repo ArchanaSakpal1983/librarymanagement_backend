@@ -2,6 +2,7 @@ package com.example.library_management.repository;
 
 //Import the Member entity class
 import com.example.library_management.model.Member;
+import java.util.Optional;
 
 //Import Spring Data JPA interface to provide CRUD operations
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +14,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
     // Custom queries can go here if needed
+    Optional<Member> findByUsername(String username);
+
 }

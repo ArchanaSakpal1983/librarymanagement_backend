@@ -1,17 +1,15 @@
-// Controller Class: For REST API endpoints
 package com.example.library_management.controller;
 
 import com.example.library_management.model.Member;
-
 import com.example.library_management.service.MemberService;
+
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import jakarta.validation.*;
 
 import java.util.List;
 import java.util.Optional;
-
-//REST controller for managing members.
 
 @RestController
 @RequestMapping("/api/members")
@@ -20,31 +18,54 @@ public class MemberController {
     @Autowired
     private MemberService memberService;
 
+    // ───────────────────────────────
+    // ADMIN ENDPOINTS
+    // ───────────────────────────────
+
     @GetMapping
-    public List<Member> getAllMembers() {
-        return memberService.getAllMembers();
+    public ResponseEntity<List<Member>> getAllMembers() {
+        return ResponseEntity.ok(memberService.getAllMembers());
     }
 
     @GetMapping("/{id}")
-    public Optional<Member> getMemberById(@PathVariable Long id) {
-        return memberService.getMemberById(id);
+    public ResponseEntity<Optional<Member>> getMemberById(@PathVariable Long id) {
+        return ResponseEntity.ok(memberService.getMemberById(id));
     }
 
     @PostMapping
-    public Member createMember(@Valid @RequestBody Member member) {
-        return memberService.createMember(member);
-        
+    public ResponseEntity<Member> createMember(@Valid @RequestBody Member member) {
+        return ResponseEntity.ok(memberService.createMember(member));
     }
 
     @PutMapping("/{id}")
-    public Member updateMember(@PathVariable Long id, @Valid @RequestBody Member member) {
-        member.setId(id); // Ensure ID from path is applied to the object
-        return memberService.updateMember(member);
+    public ResponseEntity<Member> updateMember(@PathVariable Long id, @Valid @RequestBody Member member) {
+        member.setId(id);
+        return ResponseEntity.ok(memberService.updateMember(member));
     }
-    
-    
+
     @DeleteMapping("/{id}")
-    public void deleteMember(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteMember(@PathVariable Long id) {
         memberService.deleteMember(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ───────────────────────────────
+    // MEMBER-SELF ENDPOINTS (JWT protected)
+    // ───────────────────────────────
+
+    /**
+     * Authenticated member retrieves their own details
+     */
+    @GetMapping("/me")
+    public ResponseEntity<Member> getCurrentMember() {
+        return ResponseEntity.ok(memberService.getCurrentAuthenticatedMember());
+    }
+
+    /**
+     * Authenticated member updates their own profile
+     */
+    @PutMapping("/me")
+    public ResponseEntity<Member> updateMyProfile(@Valid @RequestBody Member updatedMember) {
+        return ResponseEntity.ok(memberService.updateOwnProfile(updatedMember));
     }
 }
