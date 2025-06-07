@@ -6,6 +6,7 @@ import com.example.library_management.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -17,6 +18,9 @@ public class MemberService {
 
     @Autowired
     private MemberRepository memberRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // ───────────────────────────────────────────────────────
     // ADMIN USE – Unrestricted access (all members)
@@ -58,9 +62,17 @@ public class MemberService {
 
     public Member updateOwnProfile(Member updatedInfo) {
         Member currentMember = getCurrentAuthenticatedMember();
+
         currentMember.setName(updatedInfo.getName());
         currentMember.setEmail(updatedInfo.getEmail());
+        currentMember.setUsername(updatedInfo.getUsername());
         currentMember.setActive(updatedInfo.isActive());
+
+        if (updatedInfo.getPassword() != null && !updatedInfo.getPassword().isBlank()) {
+            String encoded = passwordEncoder.encode(updatedInfo.getPassword());
+            currentMember.setPassword(encoded);
+        }
+
         return memberRepository.save(currentMember);
     }
 
