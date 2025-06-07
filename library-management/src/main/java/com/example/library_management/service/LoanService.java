@@ -24,8 +24,15 @@ public class LoanService {
     @Autowired
     private MemberService memberService;
 
+    // Admin: Get all loans
     public List<Loan> getAllLoans() {
         return loanRepository.findAll();
+    }
+
+    // Member: Get loans for currently authenticated member
+    public List<Loan> getLoansForCurrentMember() {
+        Member current = memberService.getCurrentAuthenticatedMember();
+        return loanRepository.findByMember(current);
     }
 
     public Loan getLoanById(Long id) {

@@ -1,16 +1,14 @@
 package com.example.library_management.repository;
 
-//Import the Loan entity class
 import com.example.library_management.model.Loan;
-
-//Import Spring Data JPA interface to provide CRUD operations
+import com.example.library_management.model.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-// This interface below is for Loan entity
-// Extending JpaRepository that provide built-in methods for basic CRUD operations anf pagination 
-// @param <Loan> The entity type to manage
-// @param <Long> The type of the entity's primary key
+import java.util.List;
 
+// This interface handles data access for Loan entity
 public interface LoanRepository extends JpaRepository<Loan, Long> {
-	// Custom queries can go here if needed
+    
+    // Fetch all loans for a specific member
+    List<Loan> findByMember(Member member);
 }
