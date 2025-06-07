@@ -91,6 +91,10 @@ public class LoanService {
         return loanRepository.save(loan);
     }
 
+    public void deleteLoan(Long id) {
+        loanRepository.deleteById(id);
+    }
+
     private void validateLoanCreation(Member member, Long bookId) {
         if (!memberService.isMembershipValid(member)) {
             throw new RuntimeException("Membership has expired.");

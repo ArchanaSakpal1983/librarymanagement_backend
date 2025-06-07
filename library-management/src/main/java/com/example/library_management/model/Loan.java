@@ -32,10 +32,11 @@ public class Loan {
     private LocalDate returnDate;
 
     private int renewCount = 0;
-
     private Double fineAmount = 0.0;
 
-    // --- Utility Methods ---
+    // ───────────────────────────────
+    // Utility Methods
+    // ───────────────────────────────
 
     public boolean isReturned() {
         return returnDate != null;
@@ -61,10 +62,21 @@ public class Loan {
         return Math.min(totalFine, MAX_FINE);
     }
 
-    
-    
-    
-    // --- Getters & Setters ---
+    /**
+     * Renews the loan by extending the due date, if allowed.
+     * Throws IllegalStateException if not renewable.
+     */
+    public void renew() {
+        if (!canRenew()) {
+            throw new IllegalStateException("Loan cannot be renewed.");
+        }
+        this.dueDate = this.dueDate.plusDays(LOAN_DURATION_DAYS);
+        this.renewCount += 1;
+    }
+
+    // ───────────────────────────────
+    // Getters & Setters
+    // ───────────────────────────────
 
     public Long getId() { return id; }
 
