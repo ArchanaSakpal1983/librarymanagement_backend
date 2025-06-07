@@ -1,71 +1,110 @@
+// LoanService.java
 package com.example.library_management.service;
-// addition 29May book model for book availability logic
+
 import com.example.library_management.model.Book;
 import com.example.library_management.model.Loan;
-// addition 29 May BookRepo for Autowire DB operations relating to availability logic
+import com.example.library_management.model.Member;
 import com.example.library_management.repository.BookRepository;
 import com.example.library_management.repository.LoanRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
-// Service layer for handling logic related to Loans (borrowing books).
-
-@Service 	// Marks this class as a service bean
+@Service
 public class LoanService {
 
-    @Autowired // Inject LoanRepository for DB operations
+    @Autowired
     private LoanRepository loanRepository;
-    
-    @Autowired // Inject BookRepository for DB operations - 29 May for availability logic
+
+    @Autowired
     private BookRepository bookRepository;
 
-    // get all loan records
+    @Autowired
+    private MemberService memberService;
+
     public List<Loan> getAllLoans() {
         return loanRepository.findAll();
     }
 
-    // get loan record by id
-    public Optional<Loan> getLoanById(Long id) {
-        return loanRepository.findById(id);
+    public Loan getLoanById(Long id) {
+        return loanRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Loan not found"));
     }
 
-    // SAVING / UPDATING LOAN RECORD (revised 29May to update availibility):
-    // to perform the following fuctions
-    // 1. Retrieve the related Book for DB
-    // 2. Check is book is loaned or returned (availability)
-    // 3. Update the available satus on the book.
-    // 4. Save the Book to DB
-    // 5. Linked the managed Book back to Loan.
-    // 6. Finally Save the loan.
-    public Loan saveLoan(Loan loan) {
+    public Loan borrowBook(Long bookId) {
+        Member member = memberService.getCurrentAuthenticatedMember();
+
+        validateLoanCreation(member, bookId);
+
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found"));
+
+        Loan loan = new Loan();
+        loan.setBook(book);
+        loan.setMember(member);
+        loan.setBorrowDate(LocalDate.now());
+        loan.setDueDate(LocalDate.now().plusDays(Loan.LOAN_DURATION_DAYS));
+        loan.setRenewCount(0);
+
+        book.setAvailable(false);
+        bookRepository.save(book);
+
+        return loanRepository.save(loan);
+    }
+
+    public Loan returnBook(Long loanId) {
+        Loan loan = getLoanById(loanId);
+
+        if (loan.isReturned()) {
+            throw new RuntimeException("Book already returned");
+        }
+
+        loan.setReturnDate(LocalDate.now());
+        loan.setFineAmount(loan.calculateCurrentFine());
+
         Book book = loan.getBook();
+        book.setAvailable(true);
+        bookRepository.save(book);
 
-        if (book != null && book.getId() != null) {
-            Optional<Book> bookOptional = bookRepository.findById(book.getId());
-            if (bookOptional.isPresent()) {
-                Book managedBook = bookOptional.get();
+        return loanRepository.save(loan);
+    }
 
-                // Check if the loan has a returnDate set (i.e., book is returned)
-                if (loan.getReturnDate() != null) {
-                    managedBook.setAvailable(true);
-                } else {
-                    // Book is being borrowed
-                    managedBook.setAvailable(false);
-                }
+    public Loan renewLoan(Long loanId) {
+        Loan loan = getLoanById(loanId);
 
-                bookRepository.save(managedBook);
-                loan.setBook(managedBook); // ensure loan is linked to managed entity
-            }
+        if (loan.isReturned()) {
+            throw new RuntimeException("Cannot renew a returned book.");
+        }
+
+        if (!loan.canRenew()) {
+            throw new RuntimeException("Cannot renew this loan (limit reached or overdue).");
+        }
+
+        try {
+            loan.renew();
+        } catch (IllegalStateException e) {
+            throw new RuntimeException("Renewal failed: " + e.getMessage());
         }
 
         return loanRepository.save(loan);
     }
 
-    // delet loan record by ID
-    public void deleteLoan(Long id) {
-        loanRepository.deleteById(id);
+    private void validateLoanCreation(Member member, Long bookId) {
+        if (!memberService.isMembershipValid(member)) {
+            throw new RuntimeException("Membership has expired.");
+        }
+        if (memberService.getActiveLoanCount(member) >= 3) {
+            throw new RuntimeException("Borrowing limit exceeded. Max 3 books.");
+        }
+        if (memberService.hasOverdueBooks(member)) {
+            throw new RuntimeException("You have overdue books. Please return them first.");
+        }
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found"));
+        if (!book.isAvailable()) {
+            throw new RuntimeException("Book is currently not available.");
+        }
     }
 }

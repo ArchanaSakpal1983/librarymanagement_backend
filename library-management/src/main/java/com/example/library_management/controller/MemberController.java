@@ -2,7 +2,6 @@ package com.example.library_management.controller;
 
 import com.example.library_management.model.Member;
 import com.example.library_management.service.MemberService;
-
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +12,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/members")
+@CrossOrigin(origins = "http://localhost:5173") // Allow frontend dev access
 public class MemberController {
 
     @Autowired
@@ -30,6 +30,13 @@ public class MemberController {
     @GetMapping("/{id}")
     public ResponseEntity<Optional<Member>> getMemberById(@PathVariable Long id) {
         return ResponseEntity.ok(memberService.getMemberById(id));
+    }
+
+    @GetMapping("/username/{username}")
+    public ResponseEntity<Member> getMemberByUsername(@PathVariable String username) {
+        Optional<Member> member = memberService.getMemberByUsername(username);
+        return member.map(ResponseEntity::ok)
+                     .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -53,17 +60,11 @@ public class MemberController {
     // MEMBER-SELF ENDPOINTS (JWT protected)
     // ───────────────────────────────
 
-    /**
-     * Authenticated member retrieves their own details
-     */
     @GetMapping("/me")
     public ResponseEntity<Member> getCurrentMember() {
         return ResponseEntity.ok(memberService.getCurrentAuthenticatedMember());
     }
 
-    /**
-     * Authenticated member updates their own profile
-     */
     @PutMapping("/me")
     public ResponseEntity<Member> updateMyProfile(@Valid @RequestBody Member updatedMember) {
         return ResponseEntity.ok(memberService.updateOwnProfile(updatedMember));

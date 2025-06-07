@@ -1,3 +1,5 @@
+
+// LoanController.java
 package com.example.library_management.controller;
 
 import com.example.library_management.model.Loan;
@@ -6,10 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
-
-
-// REST controller for managing book loans.
 
 @RestController
 @RequestMapping("/api/loans")
@@ -18,32 +16,37 @@ public class LoanController {
     @Autowired
     private LoanService loanService;
 
-    // Get all loans
+    // ADMIN: View All Loans
     @GetMapping
     public List<Loan> getAllLoans() {
         return loanService.getAllLoans();
     }
 
-    // Get a loan by ID
+    // MEMBER / ADMIN: Get Loan by ID
     @GetMapping("/{id}")
-    public Optional<Loan> getLoanById(@PathVariable Long id) {
+    public Loan getLoanById(@PathVariable Long id) {
         return loanService.getLoanById(id);
     }
 
-    // Create a new loan
-    @PostMapping
-    public Loan createLoan(@RequestBody Loan loan) {
-        return loanService.saveLoan(loan);
+    // MEMBER: Borrow a Book
+    @PostMapping("/borrow")
+    public Loan borrowBook(@RequestParam Long bookId) {
+        return loanService.borrowBook(bookId);
     }
 
-    // Update a loan (e.g., return a book)
-    @PutMapping("/{id}")
-    public Loan updateLoan(@PathVariable Long id, @RequestBody Loan loan) {
-        loan.setId(id); // Set the ID for update
-        return loanService.saveLoan(loan);
+    // MEMBER: Return a Book
+    @PutMapping("/{id}/return")
+    public Loan returnBook(@PathVariable Long id) {
+        return loanService.returnBook(id);
     }
 
-    // Delete a loan (e.g., admin cancels loan)
+    // MEMBER: Renew a Loan
+    @PutMapping("/{id}/renew")
+    public Loan renewLoan(@PathVariable Long id) {
+        return loanService.renewLoan(id);
+    }
+
+    // ADMIN: Delete a loan
     @DeleteMapping("/{id}")
     public void deleteLoan(@PathVariable Long id) {
         loanService.deleteLoan(id);

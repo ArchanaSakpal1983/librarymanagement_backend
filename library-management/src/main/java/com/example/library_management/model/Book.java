@@ -69,5 +69,17 @@ public class Book {
         this.publishedYear = publishedYear;
     }
     
+    // To distingush borrowed and returned book.
+
+    public void markAsBorrowed() {
+        this.available = false;
+    }
+
+    public void markAsReturned() {
+        this.available = true;
+    }
+    
+    
+    
     
 }
