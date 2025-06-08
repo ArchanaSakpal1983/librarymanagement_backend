@@ -23,7 +23,6 @@ public class Member {
     private String username;
 
     @JsonIgnore
-    @NotBlank
     private String password;
 
     @Email

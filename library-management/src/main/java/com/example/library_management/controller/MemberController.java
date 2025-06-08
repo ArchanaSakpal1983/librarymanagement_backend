@@ -1,5 +1,6 @@
 package com.example.library_management.controller;
 
+import com.example.library_management.model.Loan;
 import com.example.library_management.model.Member;
 import com.example.library_management.service.MemberService;
 import jakarta.validation.Valid;
@@ -68,5 +69,11 @@ public class MemberController {
     @PutMapping("/me")
     public ResponseEntity<Member> updateMyProfile(@Valid @RequestBody Member updatedMember) {
         return ResponseEntity.ok(memberService.updateOwnProfile(updatedMember));
+    }
+
+    @GetMapping("/me/loans")
+    public ResponseEntity<List<Loan>> getCurrentMemberLoans() {
+        Member currentMember = memberService.getCurrentAuthenticatedMember();
+        return ResponseEntity.ok(currentMember.getLoans());
     }
 }
