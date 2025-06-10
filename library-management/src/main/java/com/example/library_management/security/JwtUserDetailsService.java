@@ -5,14 +5,10 @@ import com.example.library_management.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class JwtUserDetailsService implements UserDetailsService {
@@ -28,15 +24,15 @@ public class JwtUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Member member = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
-        
-        if (member.getRole() == null || member.getRole().isEmpty()) {
+
+        if (member.getRole() == null || member.getRole().isBlank()) {
             throw new IllegalStateException("User has no roles assigned");
         }
 
         return User.builder()
                 .username(member.getUsername())
-                .password(member.getPassword()) // Must be BCrypt encoded
-                .authorities(mapRolesToAuthorities(member.getRole()))
+                .password(member.getPassword()) // BCrypt password
+                .authorities(getAuthorities(member.getRole()))
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)
@@ -44,8 +40,8 @@ public class JwtUserDetailsService implements UserDetailsService {
                 .build();
     }
 
-    private List<GrantedAuthority> mapRolesToAuthorities(String role) {
-        // If you have multiple roles in future, split them here
+    private List<GrantedAuthority> getAuthorities(String role) {
+        // Expandable to multiple roles in future (e.g., comma-separated)
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
     }
 }

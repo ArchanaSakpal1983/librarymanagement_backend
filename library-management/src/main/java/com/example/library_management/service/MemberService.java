@@ -1,6 +1,5 @@
 package com.example.library_management.service;
 
-import com.example.library_management.model.Loan;
 import com.example.library_management.model.Member;
 import com.example.library_management.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,13 +21,9 @@ public class MemberService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // ───────────────────────────────────────────────────────
-    // ADMIN USE – Unrestricted access (all members)
-    // ───────────────────────────────────────────────────────
-
-    public Optional<Member> getMemberByUsername(String username) {
-        return memberRepository.findByUsername(username);
-    }
+    // ─────────────────────────────────────────────
+    // 🔐 ADMIN METHODS
+    // ─────────────────────────────────────────────
 
     public List<Member> getAllMembers() {
         return memberRepository.findAll();
@@ -38,21 +33,61 @@ public class MemberService {
         return memberRepository.findById(id);
     }
 
+    public Optional<Member> getMemberByUsername(String username) {
+        return memberRepository.findByUsername(username);
+    }
+
+    public List<Member> searchMembersByName(String name) {
+        return memberRepository.findByNameContainingIgnoreCase(name);
+    }
+
     public Member createMember(Member member) {
+        if (member.getPassword() != null && !member.getPassword().isBlank()) {
+            member.setPassword(passwordEncoder.encode(member.getPassword()));
+        }
         return memberRepository.save(member);
     }
 
-    public Member updateMember(Member member) {
-        return memberRepository.save(member);
+    public Member updateMember(Member updatedMember) {
+        Member existing = memberRepository.findById(updatedMember.getId())
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+
+        existing.setName(updatedMember.getName());
+        existing.setEmail(updatedMember.getEmail());
+        existing.setUsername(updatedMember.getUsername());
+        existing.setActive(updatedMember.isActive());
+        existing.setRole(updatedMember.getRole());
+        existing.setRegistrationDate(updatedMember.getRegistrationDate());
+
+        if (updatedMember.getPassword() != null && !updatedMember.getPassword().isBlank()) {
+            existing.setPassword(passwordEncoder.encode(updatedMember.getPassword()));
+        }
+
+        return memberRepository.save(existing);
     }
 
+    // Method to delete a member by ID
     public void deleteMember(Long id) {
+        // Check if the member exists before attempting deletion
+        if (!memberRepository.existsById(id)) {
+            throw new RuntimeException("Member not found with ID: " + id);
+        }
+        
+        // Delete the member
         memberRepository.deleteById(id);
     }
 
-    // ───────────────────────────────────────────────────────
-    // MEMBER USE – Self-service using JWT-authenticated user
-    // ───────────────────────────────────────────────────────
+    public Member renewMembership(Long id) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+
+        member.setRegistrationDate(LocalDate.now());
+        return memberRepository.save(member);  // save the updated member
+    }
+
+    // ─────────────────────────────────────────────
+    // 🙋 SELF-SERVICE (Admin or Member)
+    // ─────────────────────────────────────────────
 
     public Member getCurrentAuthenticatedMember() {
         String username = getCurrentUsername();
@@ -61,48 +96,45 @@ public class MemberService {
     }
 
     public Member updateOwnProfile(Member updatedInfo) {
-        Member currentMember = getCurrentAuthenticatedMember();
+        Member current = getCurrentAuthenticatedMember();
 
-        currentMember.setName(updatedInfo.getName());
-        currentMember.setEmail(updatedInfo.getEmail());
-        currentMember.setUsername(updatedInfo.getUsername());
-        currentMember.setActive(updatedInfo.isActive());
+        current.setName(updatedInfo.getName());
+        current.setEmail(updatedInfo.getEmail());
+        current.setUsername(updatedInfo.getUsername());
+        current.setActive(updatedInfo.isActive());
 
         if (updatedInfo.getPassword() != null && !updatedInfo.getPassword().isBlank()) {
-            String encoded = passwordEncoder.encode(updatedInfo.getPassword());
-            currentMember.setPassword(encoded);
+            current.setPassword(passwordEncoder.encode(updatedInfo.getPassword()));
         }
 
-        return memberRepository.save(currentMember);
+        return memberRepository.save(current);
     }
 
     private String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof UserDetails userDetails) {
             return userDetails.getUsername();
-        } else {
-            return principal.toString();
         }
+        return principal.toString();
     }
 
-    // ───────────────────────────────────────────────────────
-    // Business Logic Helpers
-    // ───────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────
+    // 📚 LOAN UTILITY METHODS
+    // ─────────────────────────────────────────────
 
     public boolean isMembershipValid(Member member) {
-        LocalDate expiryDate = member.getRegistrationDate().plusYears(1);
-        return LocalDate.now().isBefore(expiryDate);
+        LocalDate expiry = member.getRegistrationDate().plusYears(1);
+        return LocalDate.now().isBefore(expiry);
     }
 
     public boolean hasOverdueBooks(Member member) {
-        return member.getLoans().stream().anyMatch(loan ->
-            loan.getReturnDate() == null && loan.getDueDate().isBefore(LocalDate.now())
-        );
+        return member.getLoans().stream()
+                .anyMatch(loan -> loan.getReturnDate() == null && loan.getDueDate().isBefore(LocalDate.now()));
     }
 
     public long getActiveLoanCount(Member member) {
         return member.getLoans().stream()
-            .filter(loan -> loan.getReturnDate() == null)
-            .count();
+                .filter(loan -> loan.getReturnDate() == null)
+                .count();
     }
 }

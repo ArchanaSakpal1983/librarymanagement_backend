@@ -1,19 +1,20 @@
 package com.example.library_management.repository;
 
-//Import the Member entity class
 import com.example.library_management.model.Member;
-import java.util.Optional;
-
-//Import Spring Data JPA interface to provide CRUD operations
 import org.springframework.data.jpa.repository.JpaRepository;
 
-//This interface below is for Member entity
-//Extending JpaRepository that provide built-in methods for basic CRUD operations anf pagination 
-//@param <Book> The entity type to manage
-//@param <Long> The type of the entity's primary key
+import java.util.List;
+import java.util.Optional;
 
+// This interface is for Member entity
+// Extends JpaRepository to provide built-in CRUD operations and pagination
+// @param <Member> The entity type to manage
+// @param <Long> The type of the entity's primary key
 public interface MemberRepository extends JpaRepository<Member, Long> {
-    // Custom queries can go here if needed
+
+    // Find a member by exact username
     Optional<Member> findByUsername(String username);
 
+    // Find all members where the name contains a given string (case-insensitive)
+    List<Member> findByNameContainingIgnoreCase(String name);
 }

@@ -1,3 +1,5 @@
+// Loan.java
+
 package com.example.library_management.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -38,23 +40,43 @@ public class Loan {
     // Utility Methods
     // ───────────────────────────────
 
+    /**
+     * Check if the loan is returned.
+     * @return true if the loan is returned, false otherwise.
+     */
     public boolean isReturned() {
         return returnDate != null;
     }
 
+    /**
+     * Check if the loan is overdue.
+     * @return true if the loan is overdue, false otherwise.
+     */
     public boolean isOverdue() {
         return !isReturned() && dueDate != null && LocalDate.now().isAfter(dueDate);
     }
 
+    /**
+     * Check if the loan can be renewed.
+     * @return true if the loan can be renewed, false otherwise.
+     */
     public boolean canRenew() {
         return renewCount < MAX_RENEWALS && !isOverdue() && !isReturned();
     }
 
+    /**
+     * Get the number of days the loan is overdue.
+     * @return the number of overdue days.
+     */
     public long getOverdueDays() {
         if (dueDate == null || !isOverdue()) return 0;
         return ChronoUnit.DAYS.between(dueDate, LocalDate.now());
     }
 
+    /**
+     * Calculate the current fine for the overdue loan.
+     * @return the total fine amount.
+     */
     public double calculateCurrentFine() {
         if (!isOverdue()) return 0.0;
         long overdueDays = getOverdueDays();
@@ -64,14 +86,22 @@ public class Loan {
 
     /**
      * Renews the loan by extending the due date, if allowed.
-     * Throws IllegalStateException if not renewable.
+     * Increments the renew count and throws IllegalStateException if not renewable.
      */
     public void renew() {
         if (!canRenew()) {
             throw new IllegalStateException("Loan cannot be renewed.");
         }
-        this.dueDate = this.dueDate.plusDays(LOAN_DURATION_DAYS);
-        this.renewCount += 1;
+        this.dueDate = this.dueDate.plusDays(LOAN_DURATION_DAYS);  // Extend the due date by 14 days
+        this.renewCount += 1;  // Increment the renewal count
+    }
+
+    /**
+     * Resets the fine amount when the loan is returned.
+     */
+    public void returnBook() {
+        this.fineAmount = 0.0;  // Reset fine upon return
+        this.returnDate = LocalDate.now();  // Set return date to current date
     }
 
     // ───────────────────────────────
