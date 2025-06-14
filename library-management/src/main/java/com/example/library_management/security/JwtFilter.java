@@ -17,10 +17,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-/**
- * JWT filter that intercepts every request, extracts the token from the Authorization header,
- * validates it, and sets the security context if valid.
- */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
@@ -45,8 +41,11 @@ public class JwtFilter extends OncePerRequestFilter {
         String jwt = null;
         String username = null;
 
+        logger.info("Processing request for URI: {}", request.getRequestURI());
+
         // Skip JWT validation for CORS preflight (OPTIONS requests)
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            logger.info("Skipping JWT filter for OPTIONS request.");
             filterChain.doFilter(request, response);
             return;
         }
@@ -55,15 +54,24 @@ public class JwtFilter extends OncePerRequestFilter {
             // Extract token from header if present and starts with "Bearer "
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 jwt = authHeader.substring(7); // Remove "Bearer " prefix
+                logger.info("Extracted JWT: {}", jwt.substring(0, Math.min(jwt.length(), 30)) + "..."); // Log first 30 chars
                 username = jwtUtil.extractUsername(jwt); // Decode and extract username from token
+                logger.info("Extracted username from JWT: {}", username);
+            } else {
+                logger.info("No Authorization header or not starting with 'Bearer '.");
             }
 
             // Only proceed if the token is present and the user is not already authenticated
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                logger.info("Attempting to load UserDetails for username: {}", username);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 // Validate token against username and ensure it's not expired
+                logger.info("Validating token for user: {}", username);
                 if (jwtUtil.validateToken(jwt, username)) {
+                    logger.info("Token IS VALID for user: {}", username);
+                    logger.info("User Details Authorities from UserDetailsService: {}", userDetails.getAuthorities()); // CRITICAL LOG
+
                     // Set Spring Security Authentication object if valid
                     UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
@@ -73,11 +81,20 @@ public class JwtFilter extends OncePerRequestFilter {
                         );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    logger.info("SecurityContextHolder populated for user: {}", username);
+                    logger.info("SecurityContextHolder Authorities: {}", SecurityContextHolder.getContext().getAuthentication().getAuthorities()); // CRITICAL LOG
+                } else {
+                    logger.warn("JWT token IS INVALID for user: {}", username);
                 }
+            } else if (SecurityContextHolder.getContext().getAuthentication() != null) {
+                logger.info("User already authenticated in SecurityContextHolder: {}", SecurityContextHolder.getContext().getAuthentication().getName());
+                logger.info("Current SecurityContextHolder Authorities: {}", SecurityContextHolder.getContext().getAuthentication().getAuthorities()); // CRITICAL LOG
+            } else {
+                logger.info("No valid username from token or user already authenticated for current request.");
             }
         } catch (Exception e) {
             // Log any JWT-related errors for troubleshooting
-            logger.error("JWT validation error: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+            logger.error("JWT validation error: {} - {}. Request URI: {}", e.getClass().getSimpleName(), e.getMessage(), request.getRequestURI(), e);
         }
 
         // Continue filter chain regardless of authentication result
